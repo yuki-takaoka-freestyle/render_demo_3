@@ -1,7 +1,11 @@
-FROM maven:3-eclipse-temurin-17 AS build
-COPY . .
-RUN mvn clean package -Dmaven.test.skip=true
-FROM eclipse-temurin:17-alpine
-COPY --from=build /target/[YOUR APP NAME & VERSION].jar demo.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "demo.jar"]
+FROM eclipse-temurin:17-jdk-focal
+ 
+WORKDIR /app
+ 
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+RUN ./mvnw dependency:go-offline
+ 
+COPY src ./src
+ 
+CMD ["./mvnw", "spring-boot:run"]
