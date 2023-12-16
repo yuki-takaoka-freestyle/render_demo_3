@@ -11,7 +11,7 @@ public class RenderDemoApplication {
 
 	@RequestMapping("/")
 	String index(){
-		return "Hello World!";
+		return "FreeStyle!";
 	}
 
 	public static void main(String[] args) {
