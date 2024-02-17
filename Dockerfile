@@ -1,40 +1,23 @@
-# build the app.
-FROM openjdk:17-jdk-slim as build-env
+# ビルドステージ
+# maven:3.8.5-openjdk-17という名前のDockerイメージを基に新しいビルドステージを作成します。
+FROM maven:3.8.5-openjdk-17 as build
 
-# set the working dir.
-WORKDIR /app
-
-# install build tools and libraries.
-RUN apt-get update && apt-get install -y maven
-
-# copy source code to the working dir.
+# ホストマシンの現在のディレクトリのすべてのファイルとディレクトリをDockerイメージにコピーします。
 COPY . .
 
-# build the app.
-RUN mvn clean package
+# Mavenを使用してプロジェクトをビルドし、テストをスキップします。
+RUN mvn clean package -DskipTests
 
-# set up the container.
-FROM debian:12-slim
 
-# set the working dir.
-WORKDIR /app
+# パッケージステージ
+# openjdk:17.0.1-jdk-slimという名前のDockerイメージを基に新しいパッケージステージを作成します。
+FROM openjdk:17.0.1-jdk-slim
 
-# install the openjdk-17-jre-headless and clean up unnecessary files.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends openjdk-17-jre-headless && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# ビルドステージで作成したJARファイルをパッケージステージにコピーします。
+COPY --from=build /target/demo-0.0.1-SNAPSHOT.jar demo.jar
 
-# set environment variables.
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/jre
-ENV PATH=$PATH:$JAVA_HOME/bin
+# Dockerコンテナが8181ポートで待ち受けるように設定します。
+EXPOSE 8181
 
-# copy the built app from the build-env.
-COPY --from=build-env /app/target/*.jar app.jar
-
-# expose the port.
-EXPOSE 8080
-
-# command to run the app using java.
-ENTRYPOINT ["java","-jar","app.jar"]
+# Dockerコンテナが起動したときに実行するコマンドを設定します。ここではJavaアプリケーションを起動します。
+ENTRYPOINT ["java","-jar","demo.jar"]
